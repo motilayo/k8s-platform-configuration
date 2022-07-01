@@ -1,0 +1,26 @@
+replicaCount: 1
+
+image:
+  repository: jm98/terraform-controller
+  tag: 0.7.3-arm64
+  pullPolicy: Always
+
+gitImage: alpine/git:latest
+busyboxImage: busybox:latest
+terraformImage: jm98/docker-terraform:1.1.4-arm64
+
+# "{\"nat\": \"true\"}"
+jobNodeSelector: ""
+
+resources:
+  limits:
+    cpu: "1000m"
+    memory: "2Gi"
+  requests:
+    cpu: "1000m"
+    memory: "2Gi"
+
+backend:
+  namespace: vela-system
+
+githubBlocked: "'false'"

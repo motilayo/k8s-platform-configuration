@@ -1,0 +1,14 @@
+apiVersion: core.oam.dev/v1beta1
+kind: Application
+metadata:
+  name: test-s3-agboola
+spec:
+  components:
+    - name: s3-bucket
+      type: aws-s3
+      properties:
+        bucket: test-s3-agboola
+        acl: private
+        writeConnectionSecretToRef:
+          name: s3-conn
+          namespace: default

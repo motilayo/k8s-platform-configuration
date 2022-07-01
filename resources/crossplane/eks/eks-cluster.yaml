@@ -1,0 +1,111 @@
+apiVersion: ec2.aws.jet.crossplane.io/v1alpha2
+kind: VPC
+metadata:
+  name: sample-vpc
+spec:
+  forProvider:
+    region: ca-central-1
+    cidrBlock: 172.16.0.0/16
+    tags:
+      Name: sample-vpc
+---
+apiVersion: ec2.aws.jet.crossplane.io/v1alpha2
+kind: Subnet
+metadata:
+  name: sample-eks-subnet
+spec:
+  forProvider:
+    region: ca-central-1
+    availabilityZone: ca-central-1a
+    vpcIdRef:
+      name: sample-vpc
+    cidrBlock: 172.16.10.0/24
+---
+apiVersion: ec2.aws.jet.crossplane.io/v1alpha2
+kind: Subnet
+metadata:
+  name: other-eks-subnet
+spec:
+  forProvider:
+    region: ca-central-1
+    availabilityZone: ca-central-1b
+    vpcIdRef:
+      name: sample-vpc
+    cidrBlock: 172.16.20.0/24
+---
+apiVersion: iam.aws.jet.crossplane.io/v1alpha2
+kind: Role
+metadata:
+  name: sample-eks-cluster-role
+spec:
+  forProvider:
+    assumeRolePolicy: |
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "Service": "eks.amazonaws.com"
+            },
+            "Action": "sts:AssumeRole"
+          }
+        ]
+      }
+---
+apiVersion: iam.aws.jet.crossplane.io/v1alpha2
+kind: Role
+metadata:
+  name: sample-eks-node-role
+spec:
+  forProvider:
+    assumeRolePolicy: |
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "Service": "ec2.amazonaws.com"
+            },
+            "Action": "sts:AssumeRole"
+          }
+        ]
+      }
+---
+apiVersion: eks.aws.jet.crossplane.io/v1alpha2
+kind: Cluster
+metadata:
+  name: sample-eks-cluster
+  labels:
+    example: "true"
+spec:
+  forProvider:
+    region: ca-central-1
+    roleArnRef:
+      name: sample-eks-cluster-role
+    vpcConfig:
+      - subnetIdRefs:
+          - name: sample-eks-subnet
+          - name: other-eks-subnet
+  writeConnectionSecretToRef:
+    name: cluster-conn
+    namespace: default
+---
+apiVersion: eks.aws.jet.crossplane.io/v1alpha2
+kind: NodeGroup
+metadata:
+  name: sample-eks-ng
+spec:
+  forProvider:
+    region: ca-central-1
+    nodeRoleArnRef:
+      name: sample-eks-node-role
+    clusterNameRef: 
+      name: sample-eks-cluster
+    subnetIdRefs:
+      - name: sample-eks-subnet
+    scalingConfig:
+      - minSize: 1
+        maxSize: 1
+        desiredSize: 1
